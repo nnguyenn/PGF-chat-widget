@@ -30,7 +30,7 @@ const chatEndpointURL = 'https://us-central1-palm-grove-chatbot-prod.cloudfuncti
 // track conversation with array
 const chatList = [{
     role: "bot",
-    text: "Hi there! What do you want to know about Palm Grove Furniture?"
+    text: "Hey there! What are you looking for today?"
 }]
 
 function scrollToBottom(containerId) {
@@ -192,9 +192,9 @@ function createChatWidget() {
     chatWidget.innerHTML = `
         <div class="flex flex-col space-y-1.5 p-6 border-b" data-id="8">
             <div class="flex-1" data-id="9">
-                <h2 class="text-lg font-bold leading-none mb-2" data-id="10">PGF Chat</h2>
+                <h2 class="text-lg font-bold leading-none mb-2" data-id="10">Welcome to Palm Grove</h2>
                 <p class="text-sm leading-none text-gray-500 dark:text-gray-400" data-id="11">
-                    Ask me anything about Palm Grove Furniture!
+                    Ask me anything about Palm Grove furnishings!
                     <span id="tooltip-medical" class="tooltip">
                         &#9432
                     </span>
@@ -204,7 +204,7 @@ function createChatWidget() {
         <div id="conversation-scroll-container" class="flex-grow p-4 grid gap-4 justify-self-end overflow-y-scroll" data-id="10">
             <div id="conversation-container" class="space-y-2" data-id="11">
                 <div class="rounded-tl-lg rounded-tr-lg rounded-br-lg p-2 bg-gray-800 text-white dark:bg-gray-800" data-id="12">
-                    Hi there! What do you want to know about Palm Grove Furniture?
+                    Hey there! What are you looking for today?
                 </div>
             </div>
         </div>`;
@@ -345,7 +345,7 @@ function createChatWidget() {
 
     const tooltipText = document.createElement('span');
     tooltipText.className = 'tooltiptext';
-    tooltipText.innerText = 'Palm Grove does not provide medical advice. Please consult a doctor for any health-related inquiries.';
+    tooltipText.innerText = 'Palm Grove does not accept refunds, but we do have a guaranteed 6-month warranty on all furniture.';
 
     tooltipText.style.visibility = 'hidden';
     tooltipText.style.position = 'absolute';
