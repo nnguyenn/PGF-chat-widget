@@ -76,40 +76,46 @@ async function handleStreamResponse(response) {
     showLoadingDots();
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
-    let responseText = ''; 
+    let responseText = '';
     let accumulatedResponse = '';
 
-    while (true) {
-        try {
-            const { done, value } = await reader.read();
-            if (done) {
-                hideLoadingDots();
-                console.log("Stream done, accumulated response text:", accumulatedResponse);
-                if (accumulatedResponse) {
-                    try {
-                        let jsonResponse = JSON.parse(accumulatedResponse);
-                        handleJSONResponse(jsonResponse, true);
-                    } catch (parseError) {
-                        console.error("Error parsing accumulated JSON:", parseError, accumulatedResponse);
-                    }
-                }
-                break;
+    const responseElement = createNewResponse('partial-response');
+    let finalText = '';
+    let firstChunkReceived = false;
+
+    reader.read().then(function processText({ done, value }) {
+        if (done) {
+            if (accumulatedResponse) {
+                responseElement.classList.remove('partial-response');
+                chatList.push({
+                    role: "bot",
+                    text: finalText
+                });
+                renderChats();
+                scrollToBottom('conversation-scroll-container');
             }
-            responseText += decoder.decode(value, { stream: true });
-            accumulatedResponse += responseText;
-            responseText = '';
-        } catch (error) {
-            console.error('Error reading stream:', error);
-            hideLoadingDots();
+            return;
         }
-    }
+
+        responseText = decoder.decode(value, { stream: true });
+        accumulatedResponse += responseText;
+        finalText += responseText;
+
+        if (!firstChunkReceived) {
+            hideLoadingDots();
+            firstChunkReceived = true;
+        }
+
+        responseElement.innerHTML = finalText.replace(/\n/g, '<br/>');
+        scrollToBottom('conversation-scroll-container');
+
+        reader.read().then(processText);
+    }).catch(error => {
+        console.error('Error reading stream:', error);
+        hideLoadingDots();
+    });
 }
-
-function handleJSONResponse(jsonResponse, isFinal) {
-    const linkText = "https://palmgrovefurniture.com/pages/contact-us";
-    const linkHtml = `<a href="${linkText}" target="_blank" class="chat-link">${linkText}</a>`;
-    jsonResponse.response = jsonResponse.response.replace(linkText, linkHtml);
-
+function handlePlainTextResponse(text, isFinal) {
     if (isFinal) {
         const convoContainer = document.getElementById("conversation-container");
         while (convoContainer.lastChild && convoContainer.lastChild.className.includes('partial-response')) {
@@ -118,11 +124,11 @@ function handleJSONResponse(jsonResponse, isFinal) {
     }
 
     const responseElement = createNewResponse(isFinal ? '' : 'partial-response');
-    responseElement.innerHTML = jsonResponse.response;
+    responseElement.innerHTML = text;
 
     chatList.push({
         role: "bot",
-        text: jsonResponse.response
+        text: text
     });
 
     scrollToBottom('conversation-scroll-container');
@@ -155,6 +161,10 @@ async function initiateStreamConnection(url, data) {
 
 // Function to submit a chat message and initiate stream connection
 function submitChat(text) {
+    const lastResponseElement = document.querySelector('.partial-response');
+    if (lastResponseElement) {
+        lastResponseElement.classList.remove('partial-response');
+    }
     initiateStreamConnection(chatEndpointURL, { query: text });
 }
 
@@ -454,7 +464,7 @@ function createCircleIcon() {
     var circleIcon = document.createElement("div");
     circleIcon.setAttribute("id", "circle-icon");
 
-    circleIcon.className = "bg-gray-700 p-3"
+    circleIcon.className = "bg-gray-800 p-3"
     
     // Style circle icon
     circleIcon.style.position = "fixed";
@@ -493,6 +503,7 @@ function renderChats() {
         }
         convoContainer.appendChild(newChat);
     })
+    scrollToBottom('conversation-scroll-container');
 }
 
 // Call functions to create and append elements
