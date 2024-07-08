@@ -195,9 +195,6 @@ function createChatWidget() {
                 <h2 class="text-lg font-bold leading-none mb-2" data-id="10">Welcome to Palm Grove</h2>
                 <p class="text-sm leading-none text-gray-500 dark:text-gray-400" data-id="11">
                     Ask me anything about Palm Grove furnishings!
-                    <span id="tooltip-medical" class="tooltip">
-                        &#9432
-                    </span>
                 </p>
             </div>
         </div>
@@ -337,46 +334,6 @@ function createChatWidget() {
             welcomeText.remove();
         }, 1000); // Remove the element after fade out
     }, 5000);
-
-    // Style tooltip for medical disclaimer
-    const tooltip = document.getElementById('tooltip-medical');
-    tooltip.style.position = 'relative';
-    tooltip.style.display = 'inline-block';
-
-    const tooltipText = document.createElement('span');
-    tooltipText.className = 'tooltiptext';
-    tooltipText.innerText = 'Palm Grove does not accept refunds, but we do have a guaranteed 6-month warranty on all furniture.';
-
-    tooltipText.style.visibility = 'hidden';
-    tooltipText.style.position = 'absolute';
-    tooltipText.style.display = "flex";
-    tooltipText.style.justifyContent = "center";
-    tooltipText.style.alignItems = "center";
-    tooltipText.style.width = '15rem';
-    tooltipText.style.backgroundColor = '#d3d3d3';
-    tooltipText.style.color = '#36454F';
-    tooltipText.style.textAlign = 'center';
-    tooltipText.style.borderRadius = '3px';
-    tooltipText.style.padding = '5px 0';
-    tooltipText.style.zIndex = '1';
-    tooltipText.style.bottom = '95%';
-    tooltipText.style.left = '50%';
-    tooltipText.style.marginLeft = '-110px';
-    tooltipText.style.opacity = '0';
-    tooltipText.style.transition = 'opacity 0.2s';
-    tooltipText.style.fontSize = '0.6rem'
-
-    tooltip.appendChild(tooltipText);
-
-    tooltip.addEventListener('mouseover', () => {
-        tooltipText.style.visibility = 'visible';
-        tooltipText.style.opacity = '1';
-    });
-
-    tooltip.addEventListener('mouseout', () => {
-        tooltipText.style.visibility = 'hidden';
-        tooltipText.style.opacity = '0';
-    });
 
     // chat chips
     var chatChipsContainer = document.createElement("div");
