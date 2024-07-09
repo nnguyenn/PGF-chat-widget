@@ -25,7 +25,7 @@ const chatSendSVG = `
         <path d="M12 19V5"></path>
     </svg>`
 
-const chatEndpointURL = 'https://us-central1-palm-grove-chatbot-prod.cloudfunctions.net/palm-grove-chat' 
+const chatEndpointURL = 'https://us-central1-palm-grove-chatbot-prod.cloudfunctions.net/palm-grove-chat'
 
 // track conversation with array
 const chatList = [{
@@ -43,10 +43,17 @@ function pushNewUserChat(chatText) {
     chatList.push({
         role: "user",
         text: chatText
-    })
+    });
 
     renderChats();
-    scrollToBottom('conversation-scroll-container')
+    scrollToBottom('conversation-scroll-container');
+
+    if (chatText === "I have a question") {
+        handleSpecialQuery(chatText);
+    } else {
+        submitChat(chatText);
+    }
+    scrollToBottom('conversation-scroll-container');
 }
 
 function createNewResponse(extraClass = '') {
@@ -80,41 +87,38 @@ async function handleStreamResponse(response) {
     let accumulatedResponse = '';
 
     const responseElement = createNewResponse('partial-response');
-    let finalText = '';
-    let firstChunkReceived = false;
 
-    reader.read().then(function processText({ done, value }) {
-        if (done) {
-            if (accumulatedResponse) {
-                responseElement.classList.remove('partial-response');
-                chatList.push({
-                    role: "bot",
-                    text: finalText
-                });
-                renderChats();
-                scrollToBottom('conversation-scroll-container');
+    while (true) {
+        try {
+            const { done, value } = await reader.read();
+            if (done) {
+                hideLoadingDots();
+                console.log("Stream done, accumulated response text:", accumulatedResponse);
+                if (accumulatedResponse) {
+                    responseElement.classList.remove('partial-response');
+                    chatList.push({
+                        role: "bot",
+                        text: accumulatedResponse
+                    });
+                    renderChats();
+                }
+                break;
             }
-            return;
-        }
+            responseText += decoder.decode(value, { stream: true });
+            accumulatedResponse += responseText;
 
-        responseText = decoder.decode(value, { stream: true });
-        accumulatedResponse += responseText;
-        finalText += responseText;
+            responseElement.innerHTML += responseText.replace(/\n/g, '<br/>');
+            responseText = '';
+            scrollToBottom('conversation-scroll-container');
 
-        if (!firstChunkReceived) {
             hideLoadingDots();
-            firstChunkReceived = true;
+        } catch (error) {
+            console.error('Error reading stream:', error);
+            hideLoadingDots();
         }
-
-        responseElement.innerHTML = finalText.replace(/\n/g, '<br/>');
-        scrollToBottom('conversation-scroll-container');
-
-        reader.read().then(processText);
-    }).catch(error => {
-        console.error('Error reading stream:', error);
-        hideLoadingDots();
-    });
+    }
 }
+
 function handlePlainTextResponse(text, isFinal) {
     if (isFinal) {
         const convoContainer = document.getElementById("conversation-container");
@@ -161,11 +165,25 @@ async function initiateStreamConnection(url, data) {
 
 // Function to submit a chat message and initiate stream connection
 function submitChat(text) {
-    const lastResponseElement = document.querySelector('.partial-response');
-    if (lastResponseElement) {
-        lastResponseElement.classList.remove('partial-response');
-    }
     initiateStreamConnection(chatEndpointURL, { query: text });
+    scrollToBottom('conversation-scroll-container');
+}
+
+// Function to handle specific query responses
+function handleSpecialQuery(query) {
+    const specialResponses = {
+        "i have a question": "What can we help you with today?"
+    };
+
+    if (specialResponses[query.toLowerCase()]) {
+        const responseElement = createNewResponse();
+        responseElement.innerHTML = specialResponses[query.toLowerCase()];
+        chatList.push({
+            role: "bot",
+            text: specialResponses[query.toLowerCase()]
+        });
+        renderChats();
+    }
 }
 
 // Function to create and append the chat widget
@@ -289,6 +307,34 @@ function createChatWidget() {
             }
         }
         
+        @keyframes unravel {
+            0% {
+                height: 0;
+                opacity: 0;
+            }
+            100% {
+                height: 70%;
+                opacity: 1;
+            }
+        }
+
+        @keyframes ravel {
+            0% {
+                height: 70%;
+                opacity: 1;
+            }
+            100% {
+                height: 0;
+                opacity: 0;
+            }
+        }
+    
+        #chat-widget {
+            height: 0;
+            opacity: 0;
+            overflow: hidden;
+            animation: unravel 0.5s forwards;
+        }
     `;
     document.head.appendChild(styleElement);
 
@@ -340,7 +386,7 @@ function createChatWidget() {
     chatChipsContainer.setAttribute("id", "chips-container");
     chatChipsContainer.className = "flex flex-row space-x-0.5 sm:space-x-1 md:space-x-2 px-0.5 sm:px-1 md:px-2 pt-2";
 
-    const chipsText = ["What is Palm Grove?", "Donations?", "Refunds?"]
+    const chipsText = ["What is Palm Grove?", "I have a question", "I'm feeling lucky"]
     chipsText.forEach((text) => {
         var chatChip = document.createElement("div");
         chatChip.className = "text-gray-800 px-3 py-1 rounded-full flex-grow text-xs text-center border-4 border-gray-600 hover:bg-gray-600 hover:text-white cursor-pointer";
@@ -349,8 +395,6 @@ function createChatWidget() {
 
         chatChip.addEventListener("click", () => {
             pushNewUserChat(text);
-            submitChat(text);
-            scrollToBottom('conversation-scroll-container');
         });
     })
 
@@ -377,7 +421,6 @@ function createChatWidget() {
     function processChat() {
         const chatText = chatInputEl.value;
         pushNewUserChat(chatText);
-        submitChat(chatText);
         chatInputEl.value = "";
         scrollToBottom('conversation-scroll-container');
     }
@@ -404,16 +447,24 @@ function toggleChatWidget() {
 
     if (chatWidget.style.display === "none") {
         chatWidget.style.display = "flex";
+        chatWidget.style.animation = "none"; // Reset animation
+        chatWidget.offsetHeight; // Trigger reflow
+        chatWidget.style.animation = "unravel 0.5s forwards"; // Apply unravel animation
         circleIcon.innerHTML = exitLogoSVG;
         notificationCircle.style.display = "none";
         if (welcomeText) {
             welcomeText.style.display = "none"; // Hide welcome text on click
         }
     } else {
-        chatWidget.style.display = "none";
-        circleIcon.innerHTML = chatLogoSVG;
+        chatWidget.style.animation = "ravel 0.5s forwards"; // Apply ravel animation
+        setTimeout(() => {
+            chatWidget.style.display = "none";
+            circleIcon.innerHTML = chatLogoSVG;
+        }, 500); // Match the duration of the ravel animation
     }
 }
+
+
 
 // Function to create and append the circle icon button
 function createCircleIcon() {
@@ -451,7 +502,7 @@ function renderChats() {
     
     chatList.forEach((chat) => {
         var newChat = document.createElement("div");
-        newChat.innerHTML = chat.text; // Use innerHTML to render HTML content
+        newChat.innerHTML = chat.text.replace(/\n/g, '<br/>'); // Ensure newline is handled properly
 
         if (chat.role === "bot") {
             newChat.className = "rounded-tl-lg rounded-tr-lg rounded-br-lg p-2 bg-gray-800 text-white dark:bg-gray-800";
@@ -459,9 +510,9 @@ function renderChats() {
             newChat.className = "rounded-tl-lg rounded-tr-lg rounded-bl-lg p-2 bg-gray-100 dark:bg-gray-800";
         }
         convoContainer.appendChild(newChat);
-    })
-    scrollToBottom('conversation-scroll-container');
+    });
 }
+
 
 // Call functions to create and append elements
 createChatWidget();
