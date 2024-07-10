@@ -96,9 +96,12 @@ async function handleStreamResponse(response) {
                 console.log("Stream done, accumulated response text:", accumulatedResponse);
                 if (accumulatedResponse) {
                     responseElement.classList.remove('partial-response');
+                    const formattedText = formatTextWithLinks(accumulatedResponse);
+                    console.log("Final formatted response:", formattedText);
+                    responseElement.innerHTML = formattedText;
                     chatList.push({
                         role: "bot",
-                        text: accumulatedResponse
+                        text: formattedText
                     });
                     renderChats();
                 }
@@ -110,14 +113,13 @@ async function handleStreamResponse(response) {
             responseElement.innerHTML += responseText.replace(/\n/g, '<br/>');
             responseText = '';
             scrollToBottom('conversation-scroll-container');
-
-            hideLoadingDots();
         } catch (error) {
             console.error('Error reading stream:', error);
             hideLoadingDots();
         }
     }
 }
+
 
 function handlePlainTextResponse(text, isFinal) {
     if (isFinal) {
@@ -128,7 +130,9 @@ function handlePlainTextResponse(text, isFinal) {
     }
 
     const responseElement = createNewResponse(isFinal ? '' : 'partial-response');
-    responseElement.innerHTML = text;
+    console.log("Final formatted response:", formatTextWithLinks(accumulatedResponse));
+
+    responseElement.innerHTML = formatTextWithLinks(text);
 
     chatList.push({
         role: "bot",
@@ -137,6 +141,22 @@ function handlePlainTextResponse(text, isFinal) {
 
     scrollToBottom('conversation-scroll-container');
 }
+
+function formatTextWithLinks(text) {
+    // Create regex patterns for matching phone numbers, addresses, and emails
+    const phonePattern = /(\(\d{3}\)\s*\d{3}-\d{4})/g;
+    const addressPattern = /(916 Kaaahi Pl, Honolulu, HI 96817)/g;
+    const emailPattern = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+
+    // Replace matched patterns with corresponding HTML links
+    const formattedText = text
+        .replace(phonePattern, '<a href="tel:$1" class="underline">$1</a>')
+        .replace(addressPattern, '<a href="https://www.google.com/maps?q=$1" target="_blank" class="underline">$1</a>')
+        .replace(emailPattern, '<a href="mailto:$1" class="underline">$1</a>');
+
+    return formattedText;
+}
+
 
 // Function to initiate connection and handle stream
 async function initiateStreamConnection(url, data) {
@@ -227,13 +247,14 @@ function createChatWidget() {
     // Add CSS styles for links
     var styleElement = document.createElement("style");
     styleElement.innerHTML = `
-        .chat-link {
+        .underline {
             text-decoration: underline;
             color: white;
         }
-        .chat-link:hover {
-            color: #4c58b3;
+        .underline:hover {
+            color: #476DC2;
         }
+
         #notification-circle {
             position: fixed;
             bottom: 55px; 
@@ -502,7 +523,7 @@ function renderChats() {
     
     chatList.forEach((chat) => {
         var newChat = document.createElement("div");
-        newChat.innerHTML = chat.text.replace(/\n/g, '<br/>'); // Ensure newline is handled properly
+        newChat.innerHTML = chat.text; // Use innerHTML to render HTML content
 
         if (chat.role === "bot") {
             newChat.className = "rounded-tl-lg rounded-tr-lg rounded-br-lg p-2 bg-gray-800 text-white dark:bg-gray-800";
