@@ -39,6 +39,7 @@ function scrollToBottom(containerId) {
     console.log('scrolling down', container.scrollHeight);
 }
 
+
 function pushNewUserChat(chatText) {
     chatList.push({
         role: "user",
@@ -48,12 +49,15 @@ function pushNewUserChat(chatText) {
     renderChats();
     scrollToBottom('conversation-scroll-container');
 
-    if (chatText === "I have a question") {
-        handleSpecialQuery(chatText);
+    // Check the last bot message
+    const lastBotMessage = chatList.slice().reverse().find(chat => chat.role === "bot").text;
+
+    if (lastBotMessage === "Great, can you describe your ideal piece?\n") {
+        // If the last bot message is the question, search Google Sheets
+        initiateStreamConnection(chatEndpointURL, { query: chatText, context: 'describe_ideal_piece' });
     } else {
         submitChat(chatText);
     }
-    scrollToBottom('conversation-scroll-container');
 }
 
 function createNewResponse(extraClass = '') {
@@ -407,7 +411,7 @@ function createChatWidget() {
     chatChipsContainer.setAttribute("id", "chips-container");
     chatChipsContainer.className = "flex flex-row space-x-0.5 sm:space-x-1 md:space-x-2 px-0.5 sm:px-1 md:px-2 pt-2";
 
-    const chipsText = ["What is Palm Grove?", "I have a question", "Refunds?"]
+    const chipsText = ["I'm looking for a piece of furniture", "I have a question", "Can I get refunds?"]
     chipsText.forEach((text) => {
         var chatChip = document.createElement("div");
         chatChip.className = "text-gray-800 px-3 py-1 rounded-full flex-grow text-xs text-center border-4 border-gray-600 hover:bg-gray-600 hover:text-white cursor-pointer";
