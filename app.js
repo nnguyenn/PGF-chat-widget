@@ -100,12 +100,12 @@ async function handleStreamResponse(response) {
                 console.log("Stream done, accumulated response text:", accumulatedResponse);
                 if (accumulatedResponse) {
                     responseElement.classList.remove('partial-response');
-                    const formattedText = formatTextWithLinks(accumulatedResponse);
+                    const formattedText = formatTextWithLinks(accumulatedResponse.replace(/\n/g, '<br>'));
                     console.log("Final formatted response:", formattedText);
                     responseElement.innerHTML = formattedText;
                     chatList.push({
                         role: "bot",
-                        text: formattedText
+                        text: accumulatedResponse // Store the plain text response
                     });
                     renderChats();
                 }
@@ -114,7 +114,7 @@ async function handleStreamResponse(response) {
             responseText += decoder.decode(value, { stream: true });
             accumulatedResponse += responseText;
 
-            responseElement.innerHTML += responseText.replace(/\n/g, '<br/>');
+            responseElement.innerHTML += formatTextWithLinks(responseText.replace(/\n/g, '<br>'));
             responseText = '';
             scrollToBottom('conversation-scroll-container');
         } catch (error) {
@@ -123,6 +123,8 @@ async function handleStreamResponse(response) {
         }
     }
 }
+
+
 
 
 function handlePlainTextResponse(text, isFinal) {
@@ -527,7 +529,7 @@ function renderChats() {
     
     chatList.forEach((chat) => {
         var newChat = document.createElement("div");
-        newChat.innerHTML = chat.text; // Use innerHTML to render HTML content
+        newChat.innerHTML = formatTextWithLinks(chat.text.replace(/\n/g, '<br>')); // Replace newlines with <br> and format links
 
         if (chat.role === "bot") {
             newChat.className = "rounded-tl-lg rounded-tr-lg rounded-br-lg p-2 bg-gray-800 text-white dark:bg-gray-800";
@@ -537,6 +539,7 @@ function renderChats() {
         convoContainer.appendChild(newChat);
     });
 }
+
 
 
 // Call functions to create and append elements
