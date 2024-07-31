@@ -260,6 +260,25 @@ function createChatWidget() {
         .underline:hover {
             color: #476DC2;
         }
+        .add-to-cart-button {
+            padding: 10px 20px;
+            background-color: #20c997;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+    
+        .add-to-cart-button:hover {
+            background-color: #17a589;
+        }
+    
+        .add-to-cart-button:active {
+            background-color: #148f77;
+        }
 
         #notification-circle {
             position: fixed;
